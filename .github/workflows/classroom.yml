@@ -1,0 +1,55 @@
+name: Autograde Search Algorithms
+
+on: [push, workflow_dispatch]
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout student submission
+        uses: actions/checkout@v4
+
+      - name: Checkout hidden tests
+        uses: actions/checkout@v4
+        with:
+          repository: sst-cs/ai-assignment-2-tests
+          token: ${{ secrets.HIDDEN_TESTS_TOKEN }}
+          path: hidden-tests
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run hidden tests and capture score
+        run: |
+          pytest -q hidden-tests/tests > test_output.txt 2>&1 || true
+          cat test_output.txt
+          python -c '
+          import re
+          text = open("test_output.txt", "r", encoding="utf-8").read()
+          m = re.search(r"(\d+)\s+passed", text)
+          print(m.group(1) if m else 0)
+          ' > score.txt
+          passed=$(cat score.txt)
+          echo "SCORE=$passed" >> $GITHUB_ENV
+
+      - name: Show score
+        run: |
+          echo "Final Score: $SCORE / 10"
+
+      - name: Evaluate final score
+        run: |
+          if [ "${SCORE}" -lt 5 ]; then
+            echo "Score is below 5/10. Needs improvement."
+            exit 1
+          else
+            echo "Score is 5/10 or above. Good job!"
+            exit 0
+          fi

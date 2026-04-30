@@ -1,5 +1,5 @@
 from utils import Graph
-from search import bfs, dfs, a_star
+from search import bfs, dfs, ucs, a_star
 
 def build_sample_graph():
     """
@@ -85,6 +85,10 @@ if __name__ == "__main__":
     print("\n[DFS Path]")
     dfs_path = dfs(graph, start_node, goal_node)
     print(dfs_path)
+    
+    print("\n[UCS Path]")
+    ucs_path = ucs(graph, start_node, goal_node)
+    print(ucs_path)
     
     print("\n[A* Path]")
     astar_path = a_star(graph, heuristics, start_node, goal_node)

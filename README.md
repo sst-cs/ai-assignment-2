@@ -10,7 +10,7 @@ Open `search.py` and implement the following three algorithms:
 2. **Depth-First Search (`dfs`)**: Implement using the `Stack` class from `utils.py`.
 3. **Uniform Cost Search (`ucs`)**: Implement using the `PriorityQueue` class from `utils.py`.
 4. **A* Search (`a_star`)**: Implement using the `PriorityQueue` class from `utils.py`.
-
+#
 ### Rules & Guidelines
 - You **must** use the data structures provided in `utils.py`.
 - **Alphabetical Tie-Breaking**: When expanding a node, always explore its neighbors in alphabetical order. The `graph.neighbors(node)` function already returns them in alphabetical order, so simply iterate through the list as returned.

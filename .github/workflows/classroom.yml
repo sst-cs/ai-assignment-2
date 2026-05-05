@@ -27,29 +27,48 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
 
-      - name: Run hidden tests and capture score
-        run: |
-          pytest -q hidden-tests/tests > test_output.txt 2>&1 || true
-          cat test_output.txt
-          python -c '
-          import re
-          text = open("test_output.txt", "r", encoding="utf-8").read()
-          m = re.search(r"(\d+)\s+passed", text)
-          print(m.group(1) if m else 0)
-          ' > score.txt
-          passed=$(cat score.txt)
-          echo "SCORE=$passed" >> $GITHUB_ENV
+      - name: BFS Tests
+        id: bfs
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: 'bfs'
+          command: 'pytest hidden-tests/tests/test_search.py -k "bfs"'
+          timeout: 10
+          max-score: 2
 
-      - name: Show score
-        run: |
-          echo "Final Score: $SCORE / 10"
+      - name: DFS Tests
+        id: dfs
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: 'dfs'
+          command: 'pytest hidden-tests/tests/test_search.py -k "dfs"'
+          timeout: 10
+          max-score: 2
 
-      - name: Evaluate final score
-        run: |
-          if [ "${SCORE}" -lt 5 ]; then
-            echo "Score is below 5/10. Needs improvement."
-            exit 1
-          else
-            echo "Score is 5/10 or above. Good job!"
-            exit 0
-          fi
+      - name: UCS Tests
+        id: ucs
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: 'ucs'
+          command: 'pytest hidden-tests/tests/test_search.py -k "ucs"'
+          timeout: 10
+          max-score: 3
+
+      - name: A-Star Tests
+        id: a_star
+        uses: education/autograding-command-grader@v1
+        with:
+          test-name: 'a_star'
+          command: 'pytest hidden-tests/tests/test_search.py -k "a_star"'
+          timeout: 10
+          max-score: 3
+
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-reporter@v1
+        env:
+          BFS_RESULTS: "${{steps.bfs.outputs.result}}"
+          DFS_RESULTS: "${{steps.dfs.outputs.result}}"
+          UCS_RESULTS: "${{steps.ucs.outputs.result}}"
+          A_STAR_RESULTS: "${{steps.a_star.outputs.result}}"
+        with:
+          runners: bfs,dfs,ucs,a_star

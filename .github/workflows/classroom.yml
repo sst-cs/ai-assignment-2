@@ -64,7 +64,7 @@ jobs:
           max-score: 3
 
       - name: Autograding Reporter
-        uses: classroom-resources/autograding-reporter@v1
+        uses: classroom-resources/autograding-grading-reporter@v1
         env:
           BFS_RESULTS: "${{steps.bfs.outputs.result}}"
           DFS_RESULTS: "${{steps.dfs.outputs.result}}"

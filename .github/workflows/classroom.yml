@@ -67,16 +67,16 @@ jobs:
         id: package
         run: |
           # Create a combined JSON results object from the individual test steps
-          # This follows the same logic as the working Web Tech assignment
+          # Fixed: Access score from the .tests[0].score field as provided by the grader
           BFS_JSON=$(echo "${{steps.bfs.outputs.result}}" | base64 -d)
           DFS_JSON=$(echo "${{steps.dfs.outputs.result}}" | base64 -d)
           UCS_JSON=$(echo "${{steps.ucs.outputs.result}}" | base64 -d)
           ASTAR_JSON=$(echo "${{steps.a_star.outputs.result}}" | base64 -d)
           
-          BFS_SCORE=$(echo $BFS_JSON | jq '.score')
-          DFS_SCORE=$(echo $DFS_JSON | jq '.score')
-          UCS_SCORE=$(echo $UCS_JSON | jq '.score')
-          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.score')
+          BFS_SCORE=$(echo $BFS_JSON | jq '.tests[0].score // 0')
+          DFS_SCORE=$(echo $DFS_JSON | jq '.tests[0].score // 0')
+          UCS_SCORE=$(echo $UCS_JSON | jq '.tests[0].score // 0')
+          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.tests[0].score // 0')
           
           TOTAL=$((BFS_SCORE + DFS_SCORE + UCS_SCORE + ASTAR_SCORE))
           STATUS="fail"

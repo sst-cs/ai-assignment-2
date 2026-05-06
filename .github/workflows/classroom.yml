@@ -63,12 +63,33 @@ jobs:
           timeout: 10
           max-score: 3
 
+      - name: Package Results
+        id: package
+        run: |
+          # Create a combined JSON results object from the individual test steps
+          # This follows the same logic as the working Web Tech assignment
+          BFS_JSON=$(echo "${{steps.bfs.outputs.result}}" | base64 -d)
+          DFS_JSON=$(echo "${{steps.dfs.outputs.result}}" | base64 -d)
+          UCS_JSON=$(echo "${{steps.ucs.outputs.result}}" | base64 -d)
+          ASTAR_JSON=$(echo "${{steps.a_star.outputs.result}}" | base64 -d)
+          
+          BFS_SCORE=$(echo $BFS_JSON | jq '.score')
+          DFS_SCORE=$(echo $DFS_JSON | jq '.score')
+          UCS_SCORE=$(echo $UCS_JSON | jq '.score')
+          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.score')
+          
+          TOTAL=$((BFS_SCORE + DFS_SCORE + UCS_SCORE + ASTAR_SCORE))
+          STATUS="fail"
+          if [ "$TOTAL" -eq 10 ]; then STATUS="pass"; fi
+
+          # Create the final package
+          JSON="{\"test_name\":\"AI Search Tests\",\"status\":\"$STATUS\",\"max_score\":10,\"score\":$TOTAL,\"tests\":[{\"name\":\"AI Search Tests\",\"status\":\"$STATUS\",\"score\":$TOTAL,\"max_score\":10}],\"output\":\"Detailed logs are available in the Actions tab.\"}"
+          B64=$(echo -n "$JSON" | base64 -w 0)
+          echo "result=$B64" >> $GITHUB_OUTPUT
+
       - name: Autograding Reporter
         uses: classroom-resources/autograding-grading-reporter@v1
         env:
-          BFS_RESULTS: "${{steps.bfs.outputs.result}}"
-          DFS_RESULTS: "${{steps.dfs.outputs.result}}"
-          UCS_RESULTS: "${{steps.ucs.outputs.result}}"
-          A_STAR_RESULTS: "${{steps.a_star.outputs.result}}"
+          GRADER_RESULTS: "${{steps.package.outputs.result}}"
         with:
-          runners: bfs,dfs,ucs,a_star
+          runners: grader

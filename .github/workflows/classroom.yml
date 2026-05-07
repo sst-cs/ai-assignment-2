@@ -63,12 +63,33 @@ jobs:
           timeout: 10
           max-score: 3
 
+      - name: Package Results
+        id: package
+        run: |
+          # Create a combined JSON results object from the individual test steps
+          BFS_JSON=$(echo "${{steps.bfs.outputs.result}}" | base64 -d)
+          DFS_JSON=$(echo "${{steps.dfs.outputs.result}}" | base64 -d)
+          UCS_JSON=$(echo "${{steps.ucs.outputs.result}}" | base64 -d)
+          ASTAR_JSON=$(echo "${{steps.a_star.outputs.result}}" | base64 -d)
+          
+          BFS_SCORE=$(echo $BFS_JSON | jq '.tests[0].score // 0')
+          DFS_SCORE=$(echo $DFS_JSON | jq '.tests[0].score // 0')
+          UCS_SCORE=$(echo $UCS_JSON | jq '.tests[0].score // 0')
+          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.tests[0].score // 0')
+          
+          TOTAL=$((BFS_SCORE + DFS_SCORE + UCS_SCORE + ASTAR_SCORE))
+          
+          STATUS="pass"
+          if [ "$TOTAL" -eq 0 ]; then STATUS="fail"; fi
+
+          # Simplified JSON structure to fix table display bug
+          JSON="{\"test_name\":\"AI Assignment 2\",\"status\":\"$STATUS\",\"max_score\":10,\"score\":$TOTAL,\"tests\":[{\"name\":\"AI Search Tests\",\"status\":\"$STATUS\",\"score\":$TOTAL,\"max_score\":10}]}"
+          B64=$(echo -n "$JSON" | base64 -w 0)
+          echo "result=$B64" >> $GITHUB_OUTPUT
+
       - name: Autograding Reporter
-        uses: classroom-resources/autograding-grading-reporter@v1
+        uses: education/autograding-grading-reporter@v1
         env:
-          BFS_RESULTS: "${{steps.bfs.outputs.result}}"
-          DFS_RESULTS: "${{steps.dfs.outputs.result}}"
-          UCS_RESULTS: "${{steps.ucs.outputs.result}}"
-          A_STAR_RESULTS: "${{steps.a_star.outputs.result}}"
+          GRADER_RESULTS: "${{steps.package.outputs.result}}"
         with:
-          runners: bfs,dfs,ucs,a_star
+          runners: grader

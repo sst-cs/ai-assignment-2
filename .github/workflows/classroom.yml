@@ -5,6 +5,10 @@ on: [push, workflow_dispatch]
 jobs:
   grade:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      statuses: write
 
     steps:
       - name: Checkout student submission

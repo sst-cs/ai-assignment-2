@@ -5,6 +5,11 @@ on: [push, workflow_dispatch]
 jobs:
   grade:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      statuses: write
+      checks: write
 
     steps:
       - name: Checkout student submission
@@ -30,6 +35,7 @@ jobs:
       - name: BFS Tests
         id: bfs
         uses: education/autograding-command-grader@v1
+        continue-on-error: true
         with:
           test-name: 'bfs'
           command: 'pytest hidden-tests/tests/test_search.py -k "bfs"'
@@ -39,6 +45,7 @@ jobs:
       - name: DFS Tests
         id: dfs
         uses: education/autograding-command-grader@v1
+        continue-on-error: true
         with:
           test-name: 'dfs'
           command: 'pytest hidden-tests/tests/test_search.py -k "dfs"'
@@ -48,6 +55,7 @@ jobs:
       - name: UCS Tests
         id: ucs
         uses: education/autograding-command-grader@v1
+        continue-on-error: true
         with:
           test-name: 'ucs'
           command: 'pytest hidden-tests/tests/test_search.py -k "ucs"'
@@ -57,6 +65,7 @@ jobs:
       - name: A-Star Tests
         id: a_star
         uses: education/autograding-command-grader@v1
+        continue-on-error: true
         with:
           test-name: 'a_star'
           command: 'pytest hidden-tests/tests/test_search.py -k "a_star"'
@@ -67,29 +76,31 @@ jobs:
         id: package
         run: |
           # Create a combined JSON results object from the individual test steps
-          BFS_JSON=$(echo "${{steps.bfs.outputs.result}}" | base64 -d)
-          DFS_JSON=$(echo "${{steps.dfs.outputs.result}}" | base64 -d)
-          UCS_JSON=$(echo "${{steps.ucs.outputs.result}}" | base64 -d)
-          ASTAR_JSON=$(echo "${{steps.a_star.outputs.result}}" | base64 -d)
+          # Decodes result and handles both flat and nested JSON structures
+          BFS_JSON=$(echo "${{steps.bfs.outputs.result}}" | base64 -d 2>/dev/null || echo '{"score":0}')
+          DFS_JSON=$(echo "${{steps.dfs.outputs.result}}" | base64 -d 2>/dev/null || echo '{"score":0}')
+          UCS_JSON=$(echo "${{steps.ucs.outputs.result}}" | base64 -d 2>/dev/null || echo '{"score":0}')
+          ASTAR_JSON=$(echo "${{steps.a_star.outputs.result}}" | base64 -d 2>/dev/null || echo '{"score":0}')
           
-          BFS_SCORE=$(echo $BFS_JSON | jq '.tests[0].score // 0')
-          DFS_SCORE=$(echo $DFS_JSON | jq '.tests[0].score // 0')
-          UCS_SCORE=$(echo $UCS_JSON | jq '.tests[0].score // 0')
-          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.tests[0].score // 0')
+          BFS_SCORE=$(echo $BFS_JSON | jq '.score // .points // (.tests[0].score) // (.tests[0].points) // 0')
+          DFS_SCORE=$(echo $DFS_JSON | jq '.score // .points // (.tests[0].score) // (.tests[0].points) // 0')
+          UCS_SCORE=$(echo $UCS_JSON | jq '.score // .points // (.tests[0].score) // (.tests[0].points) // 0')
+          ASTAR_SCORE=$(echo $ASTAR_JSON | jq '.score // .points // (.tests[0].score) // (.tests[0].points) // 0')
           
           TOTAL=$((BFS_SCORE + DFS_SCORE + UCS_SCORE + ASTAR_SCORE))
           
           STATUS="pass"
           if [ "$TOTAL" -eq 0 ]; then STATUS="fail"; fi
 
-          # Simplified JSON structure to fix table display bug
+          # Standardized JSON structure for GitHub Classroom Dashboard
           JSON="{\"test_name\":\"AI Assignment 2\",\"status\":\"$STATUS\",\"max_score\":10,\"score\":$TOTAL,\"tests\":[{\"name\":\"AI Search Tests\",\"status\":\"$STATUS\",\"score\":$TOTAL,\"max_score\":10}]}"
           B64=$(echo -n "$JSON" | base64 -w 0)
           echo "result=$B64" >> $GITHUB_OUTPUT
 
       - name: Autograding Reporter
-        uses: classroom-resources/autograding-grading-reporter@v1
+        uses: education/autograding-grading-reporter@v1
+        continue-on-error: true
         env:
-          GRADER_RESULTS: "${{steps.package.outputs.result}}"
+          PACKAGE_RESULTS: "${{steps.package.outputs.result}}"
         with:
-          runners: grader
+          runners: package

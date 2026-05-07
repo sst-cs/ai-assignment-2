@@ -9,6 +9,7 @@ jobs:
       actions: read
       contents: read
       statuses: write
+      checks: write
 
     steps:
       - name: Checkout student submission
